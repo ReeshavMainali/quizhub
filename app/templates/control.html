@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Control — {{ game.name }}{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+  <div class="min-w-0">
+    <p class="text-xs uppercase tracking-wide text-muted mb-1 flex items-center gap-2">
+      <span id="conn-dot" class="w-1.5 h-1.5 rounded-full bg-muted"></span>
+      Host control
+    </p>
+    <h1 class="text-2xl font-display font-semibold truncate">{{ game.name }}</h1>
+  </div>
+  <div class="flex items-center gap-2 shrink-0">
+    <a href="{{ url_for('main.display', game_id=game.id) }}" target="_blank" class="btn-secondary">
+      Open display
+      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M7 7h10v10"/></svg>
+    </a>
+    <button id="undo-btn" class="btn-secondary">Undo</button>
+    <button id="end-game-btn" class="btn-danger">End game</button>
+  </div>
+</div>
+
+<!-- Round tabs -->
+<div class="flex flex-wrap gap-2 mb-6" id="round-tabs">
+  {% for round in rounds %}
+  <button type="button" class="round-tab btn-secondary !py-2 text-sm" data-round-id="{{ round.id }}">
+    {{ round.name }}
+    <span class="text-xs opacity-70">· {{ round.type }}</span>
+  </button>
+  {% endfor %}
+</div>
+
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-4">
+    <div id="stage" class="card p-6 min-h-[280px] flex flex-col"></div>
+    <div id="question-list" class="card p-5"></div>
+  </div>
+
+  <div class="space-y-4">
+    <div class="card p-5">
+      <h2 class="font-display font-semibold mb-3">Scoreboard</h2>
+      <ul id="scoreboard" class="space-y-2"></ul>
+    </div>
+    <div id="toast-area" class="space-y-2"></div>
+  </div>
+</div>
+
+<div id="final-overlay" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+  <div class="card p-8 w-full max-w-md text-center shadow-lift">
+    <h2 class="font-display font-semibold text-xl mb-4">Final results</h2>
+    <ul id="final-standings" class="space-y-2 text-left mb-6"></ul>
+    <a href="{{ url_for('main.dashboard') }}" class="btn-primary w-full">Back to dashboard</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.QUIZHUB = { gameId: {{ game.id }} };
+</script>
+<script src="{{ url_for('static', filename='js/vendor/socket.io.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/timer-ring.js') }}"></script>
+<script src="{{ url_for('static', filename='js/control.js') }}"></script>
+{% endblock %}

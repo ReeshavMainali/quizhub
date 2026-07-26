@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ game.name }} — Display</title>
+
+<script>
+  (function () {
+    var stored = localStorage.getItem("quizhub-theme");
+    var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    var theme = stored || (prefersDark ? "dark" : "light");
+    if (theme === "dark") document.documentElement.classList.add("dark");
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='dist/output.css') }}">
+</head>
+<body class="min-h-screen bg-bg text-text font-body overflow-hidden">
+
+<div class="h-screen w-screen flex flex-col p-6 sm:p-10">
+  <!-- top bar: round stepper -->
+  <div class="flex items-center justify-between mb-6 shrink-0">
+    <div class="font-display font-semibold text-lg opacity-70">{{ game.name }}</div>
+    <div id="round-stepper" class="flex gap-2"></div>
+    <div class="flex items-center gap-2">
+      <button id="theme-toggle" class="w-9 h-9 rounded-lg border border-border flex items-center justify-center text-muted hover:text-text" aria-label="Toggle theme">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button id="fullscreen-toggle" class="w-9 h-9 rounded-lg border border-border flex items-center justify-center text-muted hover:text-text" aria-label="Toggle fullscreen">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- main stage -->
+  <div id="stage" class="flex-1 min-h-0 flex flex-col items-center justify-center text-center"></div>
+
+  <!-- scoreboard strip -->
+  <div id="scoreboard-strip" class="shrink-0 mt-6 flex flex-wrap justify-center gap-3"></div>
+</div>
+
+<!-- gesture unlock overlay -->
+<div id="start-overlay" class="fixed inset-0 bg-bg flex flex-col items-center justify-center gap-4 z-50 cursor-pointer">
+  <div class="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center text-surface font-display text-2xl font-semibold">Q</div>
+  <p class="font-display text-2xl">{{ game.name }}</p>
+  <p class="text-muted">Click anywhere to begin</p>
+</div>
+
+<!-- final results overlay -->
+<div id="final-overlay" class="hidden fixed inset-0 bg-bg flex flex-col items-center justify-center gap-6 z-40">
+  <p class="text-sm uppercase tracking-widest text-muted">Final results</p>
+  <div id="final-standings" class="flex flex-col gap-3 w-full max-w-xl px-6"></div>
+</div>
+
+<audio id="clip-audio" class="hidden"></audio>
+
+<script src="{{ url_for('static', filename='js/vendor/socket.io.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/timer-ring.js') }}"></script>
+<script>window.QUIZHUB = { gameId: {{ game.id }} };</script>
+<script src="{{ url_for('static', filename='js/display.js') }}"></script>
+</body>
+</html>

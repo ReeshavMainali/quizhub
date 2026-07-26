@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}QuizHub — Games{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-semibold">Your games</h1>
+    <p class="text-muted text-sm mt-1">Create a quiz, set it up, then run it from the control panel.</p>
+  </div>
+  <button onclick="document.getElementById('new-game-modal').classList.remove('hidden')" class="btn-primary">
+    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+    New game
+  </button>
+</div>
+
+{% if games %}
+<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  {% for game in games %}
+  {% set s = game.to_summary() %}
+  <a href="{{ url_for('main.game_setup', game_id=game.id) if game.status == 'setup' else url_for('main.control', game_id=game.id) }}"
+     class="card p-5 hover:border-primary/60 transition-colors block">
+    <div class="flex items-start justify-between mb-3">
+      <h2 class="font-display font-semibold text-lg leading-snug">{{ game.name }}</h2>
+      <span class="badge shrink-0
+        {{ 'bg-success/10 border-success/30 text-success' if game.status == 'active' else
+           'bg-muted/10 border-border text-muted' if game.status == 'completed' else
+           'bg-primary/10 border-primary/30 text-primary' }}">
+        {{ game.status }}
+      </span>
+    </div>
+    <div class="text-sm text-muted space-y-1">
+      <p>{{ s.team_count }} team{{ 's' if s.team_count != 1 }} · {{ s.round_count }} round{{ 's' if s.round_count != 1 }} · {{ s.question_count }} question{{ 's' if s.question_count != 1 }}</p>
+      <p>Created {{ s.created_at }}</p>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card p-12 text-center">
+  <p class="font-display text-lg mb-1">No games yet</p>
+  <p class="text-muted text-sm mb-5">Create your first quiz to get started.</p>
+  <button onclick="document.getElementById('new-game-modal').classList.remove('hidden')" class="btn-primary mx-auto">
+    New game
+  </button>
+</div>
+{% endif %}
+
+<div id="new-game-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+  <div class="card p-6 w-full max-w-sm shadow-lift">
+    <h2 class="font-display font-semibold text-lg mb-4">New game</h2>
+    <form method="POST" action="{{ url_for('main.create_game') }}" class="space-y-4">
+      <div>
+        <label class="label" for="name">Game name</label>
+        <input class="input" type="text" name="name" id="name" placeholder="e.g. Inter-House Quiz 2026" required autofocus>
+      </div>
+      <div>
+        <label class="label" for="default_timer">Default question timer (seconds)</label>
+        <input class="input" type="number" name="default_timer" id="default_timer" value="30" min="5" max="300">
+        <p class="text-xs text-muted mt-1">Individual rounds can override this.</p>
+      </div>
+      <div class="flex gap-2 justify-end pt-2">
+        <button type="button" onclick="document.getElementById('new-game-modal').classList.add('hidden')" class="btn-secondary">Cancel</button>
+        <button type="submit" class="btn-primary">Create game</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

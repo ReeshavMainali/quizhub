@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block title %}Set up — {{ game.name }}{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap items-start justify-between gap-3 mb-8">
+  <div>
+    <p class="text-xs uppercase tracking-wide text-muted mb-1">Setting up</p>
+    <h1 class="text-2xl font-display font-semibold">{{ game.name }}</h1>
+  </div>
+  <div class="flex items-center gap-2">
+    <form method="POST" action="{{ url_for('main.delete_game', game_id=game.id) }}"
+          onsubmit="return confirm('Delete this game and everything in it? This can\'t be undone.');">
+      <button type="submit" class="btn-secondary text-danger">Delete game</button>
+    </form>
+    <form method="POST" action="{{ url_for('main.start_game', game_id=game.id) }}">
+      <button type="submit" class="btn-primary">
+        Start game
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg>
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="grid lg:grid-cols-3 gap-6">
+  <!-- Teams -->
+  <section class="card p-5 lg:order-1">
+    <h2 class="font-display font-semibold mb-4">Teams</h2>
+    {% if game.teams %}
+    <ul class="space-y-2 mb-4">
+      {% for team in game.teams %}
+      <li class="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+        <span class="flex items-center gap-2 text-sm font-medium">
+          <span class="w-3 h-3 rounded-full shrink-0" style="background:{{ team.color }}"></span>
+          {{ team.name }}
+        </span>
+        <form method="POST" action="{{ url_for('main.delete_team', game_id=game.id, team_id=team.id) }}">
+          <button type="submit" class="text-muted hover:text-danger" aria-label="Remove team">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-sm text-muted mb-4">No teams yet.</p>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('main.add_team', game_id=game.id) }}" class="space-y-3 border-t border-border pt-4">
+      <div>
+        <label class="label" for="team-name">Team name</label>
+        <input class="input" type="text" name="name" id="team-name" placeholder="e.g. Team Falcon" required>
+      </div>
+      <div>
+        <span class="label">Color</span>
+        <div class="flex flex-wrap gap-2">
+          {% for color in team_colors %}
+          <label class="cursor-pointer">
+            <input type="radio" name="color" value="{{ color }}" class="sr-only peer" {{ 'checked' if loop.first }}>
+            <span class="block w-7 h-7 rounded-full ring-offset-2 ring-offset-surface peer-checked:ring-2 ring-text/40"
+                  style="background:{{ color }}"></span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <button type="submit" class="btn-secondary w-full">Add team</button>
+    </form>
+  </section>
+
+  <!-- Import -->
+  <section class="card p-5 lg:order-3">
+    <h2 class="font-display font-semibold mb-1">Import questions</h2>
+    <p class="text-sm text-muted mb-4">Upload a CSV to bulk-create rounds and questions.</p>
+
+    {% if game.rounds %}
+    <form method="POST" action="{{ url_for('main.import_csv', game_id=game.id) }}" enctype="multipart/form-data" class="space-y-3 mb-4">
+      <input class="input" type="file" name="csv_file" accept=".csv" required>
+      <button type="submit" class="btn-secondary w-full">Import CSV</button>
+    </form>
+    {% endif %}
+
+    <a href="{{ url_for('main.sample_csv', game_id=game.id) }}" class="text-sm text-primary hover:underline">
+      Download sample CSV template →
+    </a>
+
+    <div class="mt-4 pt-4 border-t border-border text-xs text-muted space-y-1.5">
+      <p class="font-medium text-text">Required columns:</p>
+      <p><code class="bg-surface2 px-1 py-0.5 rounded">round_name</code>, <code class="bg-surface2 px-1 py-0.5 rounded">round_type</code> (normal / lightning / av), <code class="bg-surface2 px-1 py-0.5 rounded">question</code>, <code class="bg-surface2 px-1 py-0.5 rounded">answer</code></p>
+      <p class="font-medium text-text pt-1">Optional:</p>
+      <p><code class="bg-surface2 px-1 py-0.5 rounded">choice_a..d</code>, <code class="bg-surface2 px-1 py-0.5 rounded">points</code> (default 10)</p>
+      <p class="pt-1">Rows sharing a <code class="bg-surface2 px-1 py-0.5 rounded">round_name</code> are grouped into the same round. For AV rounds, attach images/audio per question below after import.</p>
+    </div>
+  </section>
+
+  <!-- Rounds -->
+  <section class="lg:col-span-3 lg:order-2 space-y-4">
+    <div class="card p-5">
+      <h2 class="font-display font-semibold mb-4">Add a round</h2>
+      <form method="POST" action="{{ url_for('main.add_round', game_id=game.id) }}" class="grid sm:grid-cols-4 gap-3 items-end">
+        <div class="sm:col-span-2">
+          <label class="label" for="round-name">Round name</label>
+          <input class="input" type="text" name="name" id="round-name" placeholder="e.g. Science &amp; Nature" required>
+        </div>
+        <div>
+          <label class="label" for="round-type">Type</label>
+          <select class="input" name="type" id="round-type">
+            <option value="normal">Normal</option>
+            <option value="lightning">Lightning</option>
+            <option value="av">Audio-Visual</option>
+          </select>
+        </div>
+        <div>
+          <label class="label" for="timer_seconds">Timer override (sec)</label>
+          <input class="input" type="number" name="timer_seconds" id="timer_seconds" min="5" max="300" placeholder="Game default">
+        </div>
+        <div class="sm:col-span-4">
+          <label class="label" for="lightning_turn_size">Lightning: questions per team turn</label>
+          <input class="input sm:w-40" type="number" name="lightning_turn_size" id="lightning_turn_size" min="1" max="20" value="6">
+        </div>
+        <div class="sm:col-span-4">
+          <button type="submit" class="btn-primary">Add round</button>
+        </div>
+      </form>
+    </div>
+
+    {% for round in game.rounds|sort(attribute='order') %}
+    <details class="card overflow-hidden" {{ 'open' if loop.first }}>
+      <summary class="cursor-pointer select-none px-5 py-4 flex items-center justify-between gap-3 list-none">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="badge shrink-0
+            {{ 'bg-lightning/10 border-lightning/30 text-lightning' if round.type == 'lightning' else
+               'bg-accent/10 border-accent/30 text-accent' if round.type == 'av' else
+               'bg-primary/10 border-primary/30 text-primary' }}">
+            {{ round.type }}
+          </span>
+          <h3 class="font-display font-semibold truncate">{{ round.name }}</h3>
+          <span class="text-xs text-muted shrink-0">{{ round.questions|length }} question{{ 's' if round.questions|length != 1 }} · {{ round.effective_timer() }}s</span>
+        </div>
+        <div class="flex items-center gap-1 shrink-0" onclick="event.preventDefault()">
+          <form method="POST" action="{{ url_for('main.move_round', game_id=game.id, round_id=round.id) }}">
+            <input type="hidden" name="direction" value="up">
+            <button class="btn-secondary !p-2" aria-label="Move round up">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+            </button>
+          </form>
+          <form method="POST" action="{{ url_for('main.move_round', game_id=game.id, round_id=round.id) }}">
+            <input type="hidden" name="direction" value="down">
+            <button class="btn-secondary !p-2" aria-label="Move round down">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+            </button>
+          </form>
+          <form method="POST" action="{{ url_for('main.delete_round', game_id=game.id, round_id=round.id) }}"
+                onsubmit="return confirm('Delete this round and its questions?');">
+            <button class="btn-secondary !p-2 text-danger" aria-label="Delete round">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg>
+            </button>
+          </form>
+        </div>
+      </summary>
+
+      <div class="border-t border-border px-5 py-4 space-y-4">
+        {% if round.questions %}
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-xs uppercase tracking-wide text-muted">
+                <th class="pb-2 pr-3">#</th>
+                <th class="pb-2 pr-3">Question</th>
+                <th class="pb-2 pr-3">Answer</th>
+                <th class="pb-2 pr-3">Pts</th>
+                <th class="pb-2 pr-3">Media</th>
+                <th class="pb-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for q in round.questions|sort(attribute='order') %}
+              <tr class="border-t border-border">
+                <td class="py-2 pr-3 text-muted">{{ loop.index }}</td>
+                <td class="py-2 pr-3 max-w-xs truncate">{{ q.text }}</td>
+                <td class="py-2 pr-3 max-w-[10rem] truncate text-muted">{{ q.answer }}</td>
+                <td class="py-2 pr-3">{{ q.points }}</td>
+                <td class="py-2 pr-3 text-muted">
+                  {% if q.image_filename %}🖼{% endif %}{% if q.audio_filename %}🔊{% endif %}{% if not q.image_filename and not q.audio_filename %}—{% endif %}
+                </td>
+                <td class="py-2 text-right">
+                  <form method="POST" action="{{ url_for('main.delete_question', game_id=game.id, question_id=q.id) }}">
+                    <button class="text-muted hover:text-danger" aria-label="Delete question">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-muted">No questions in this round yet.</p>
+        {% endif %}
+
+        <details class="border-t border-border pt-4">
+          <summary class="cursor-pointer text-sm text-primary hover:underline list-none">+ Add a question manually</summary>
+          <form method="POST" action="{{ url_for('main.add_question', game_id=game.id, round_id=round.id) }}"
+                enctype="multipart/form-data" class="mt-3 grid sm:grid-cols-2 gap-3">
+            <div class="sm:col-span-2">
+              <label class="label">Question</label>
+              <textarea class="input" name="text" rows="2" required></textarea>
+            </div>
+            <div>
+              <label class="label">Answer</label>
+              <input class="input" type="text" name="answer" required>
+            </div>
+            <div>
+              <label class="label">Points</label>
+              <input class="input" type="number" name="points" value="10" min="1" max="100">
+            </div>
+            <div class="sm:col-span-2 grid sm:grid-cols-4 gap-3">
+              <div>
+                <label class="label">Choice A <span class="normal-case text-muted">(optional)</span></label>
+                <input class="input" type="text" name="choice_a">
+              </div>
+              <div>
+                <label class="label">Choice B</label>
+                <input class="input" type="text" name="choice_b">
+              </div>
+              <div>
+                <label class="label">Choice C</label>
+                <input class="input" type="text" name="choice_c">
+              </div>
+              <div>
+                <label class="label">Choice D</label>
+                <input class="input" type="text" name="choice_d">
+              </div>
+            </div>
+            {% if round.type == 'av' %}
+            <div>
+              <label class="label">Image <span class="normal-case text-muted">(optional)</span></label>
+              <input class="input" type="file" name="image" accept=".png,.jpg,.jpeg,.gif,.webp">
+            </div>
+            <div>
+              <label class="label">Audio clip <span class="normal-case text-muted">(optional)</span></label>
+              <input class="input" type="file" name="audio" accept=".mp3,.wav,.ogg,.m4a">
+            </div>
+            {% endif %}
+            <div class="sm:col-span-2">
+              <button type="submit" class="btn-secondary">Add question</button>
+            </div>
+          </form>
+        </details>
+      </div>
+    </details>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

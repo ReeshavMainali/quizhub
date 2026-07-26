@@ -1,0 +1,12 @@
+{
+  "name": "quizhub",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -i ./app/static/src/input.css -o ./app/static/dist/output.css --minify",
+    "watch:css": "tailwindcss -i ./app/static/src/input.css -o ./app/static/dist/output.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.4"
+  }
+}
