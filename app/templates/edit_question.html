@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Edit question — {{ game.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <h1 class="text-2xl font-display font-semibold mb-4">Edit question — {{ round.name }}</h1>
+
+  <form method="POST" action="{{ url_for('main.edit_question', game_id=game.id, question_id=question.id) }}" enctype="multipart/form-data" class="grid sm:grid-cols-2 gap-3">
+    <div class="sm:col-span-2">
+      <label class="label">Question</label>
+      <textarea class="input" name="text" rows="3" required>{{ question.text }}</textarea>
+    </div>
+
+    <div>
+      <label class="label">Answer</label>
+      <input class="input" type="text" name="answer" value="{{ question.answer }}" required>
+    </div>
+
+    <div>
+      <label class="label">Points</label>
+      <input class="input" type="number" name="points" value="{{ question.points }}" min="1" max="100">
+    </div>
+
+    <div class="sm:col-span-2 grid sm:grid-cols-4 gap-3">
+      <div>
+        <label class="label">Choice A <span class="normal-case text-muted">(optional)</span></label>
+        <input class="input" type="text" name="choice_a" value="{{ question.choices[0] if question.choices and question.choices|length > 0 else '' }}">
+      </div>
+      <div>
+        <label class="label">Choice B</label>
+        <input class="input" type="text" name="choice_b" value="{{ question.choices[1] if question.choices and question.choices|length > 1 else '' }}">
+      </div>
+      <div>
+        <label class="label">Choice C</label>
+        <input class="input" type="text" name="choice_c" value="{{ question.choices[2] if question.choices and question.choices|length > 2 else '' }}">
+      </div>
+      <div>
+        <label class="label">Choice D</label>
+        <input class="input" type="text" name="choice_d" value="{{ question.choices[3] if question.choices and question.choices|length > 3 else '' }}">
+      </div>
+    </div>
+
+    {% if round.type == 'av' %}
+    <div class="sm:col-span-2">
+      <p class="label">Current media</p>
+      <div class="flex gap-4 items-center">
+        <div>
+          {% if question.image_filename %}
+          <div class="text-sm">Image: <a href="/static/uploads/{{ question.image_filename }}" target="_blank">view</a></div>
+          <label class="inline-flex items-center mt-1"><input type="checkbox" name="remove_image" value="1"> Remove image</label>
+          {% else %}
+          <div class="text-sm text-muted">No image uploaded</div>
+          {% endif %}
+        </div>
+        <div>
+          {% if question.audio_filename %}
+          <div class="text-sm">Audio: <a href="/static/uploads/{{ question.audio_filename }}" target="_blank">play</a></div>
+          <label class="inline-flex items-center mt-1"><input type="checkbox" name="remove_audio" value="1"> Remove audio</label>
+          {% else %}
+          <div class="text-sm text-muted">No audio uploaded</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label class="label">Replace image <span class="normal-case text-muted">(optional)</span></label>
+      <input class="input" type="file" name="image" accept=".png,.jpg,.jpeg,.gif,.webp">
+    </div>
+    <div>
+      <label class="label">Replace audio <span class="normal-case text-muted">(optional)</span></label>
+      <input class="input" type="file" name="audio" accept=".mp3,.wav,.ogg,.m4a">
+    </div>
+    {% endif %}
+
+    <div class="sm:col-span-2 flex gap-2 justify-end">
+      <a href="{{ url_for('main.game_setup', game_id=game.id) }}" class="btn-secondary">Cancel</a>
+      <button type="submit" class="btn-primary">Save changes</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

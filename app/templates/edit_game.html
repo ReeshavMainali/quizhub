@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Edit game — {{ game.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-display font-semibold">Edit game</h1>
+      <p class="text-sm text-muted">Update the name and default timer for this quiz.</p>
+    </div>
+    <a href="{{ url_for('main.dashboard') }}" class="btn-secondary">Back</a>
+  </div>
+
+  <form method="POST" action="{{ url_for('main.update_game', game_id=game.id) }}" class="space-y-4">
+    <div>
+      <label class="label" for="name">Game name</label>
+      <input class="input" type="text" id="name" name="name" value="{{ game.name }}" required>
+    </div>
+    <div>
+      <label class="label" for="default_timer">Default question timer (seconds)</label>
+      <input class="input" type="number" id="default_timer" name="default_timer" value="{{ game.default_timer }}" min="5" max="300">
+      <p class="text-xs text-muted mt-1">Individual rounds can still override this timer.</p>
+    </div>
+    <div class="flex gap-2 justify-end pt-4">
+      <a href="{{ url_for('main.dashboard') }}" class="btn-secondary">Cancel</a>
+      <button type="submit" class="btn-primary">Save changes</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

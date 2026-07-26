@@ -12,6 +12,7 @@
   let state = null;
   let prevScores = {};
   let ring = null;
+  let prevQuestionId = null;
 
   function esc(str) {
     const d = document.createElement("div");
@@ -51,14 +52,29 @@
   socket.on("connect", () => socket.emit("join", { game_id: gameId, role: "display" }));
 
   socket.on("state_update", (payload) => {
+    const newQId = payload && payload.question ? payload.question.id : null;
+    if (prevQuestionId && newQId !== prevQuestionId) {
+      try {
+        audioEl.pause();
+        audioEl.currentTime = 0;
+        audioEl.removeAttribute("src");
+      } catch (e) {}
+    }
+    prevQuestionId = newQId;
+
     state = payload;
     render();
   });
 
   socket.on("audio_play", () => {
     if (state && state.question && state.question.audio_url) {
-      audioEl.src = state.question.audio_url;
-      audioEl.play().catch(() => {});
+      try {
+        audioEl.pause();
+        audioEl.currentTime = 0;
+        audioEl.src = state.question.audio_url;
+        audioEl.load();
+        audioEl.play().catch(() => {});
+      } catch (e) {}
     }
   });
 

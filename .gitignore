@@ -7,3 +7,4 @@ node_modules/
 app/static/uploads/*
 !app/static/uploads/.gitkeep
 .DS_Store
+sample_quiz.csv

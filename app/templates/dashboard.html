@@ -17,10 +17,17 @@
 <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
   {% for game in games %}
   {% set s = game.to_summary() %}
-  <a href="{{ url_for('main.game_setup', game_id=game.id) if game.status == 'setup' else url_for('main.control', game_id=game.id) }}"
-     class="card p-5 hover:border-primary/60 transition-colors block">
-    <div class="flex items-start justify-between mb-3">
-      <h2 class="font-display font-semibold text-lg leading-snug">{{ game.name }}</h2>
+  <div class="card p-5 hover:border-primary/60 transition-colors">
+    <div class="flex items-start justify-between mb-3 gap-4">
+      <div class="min-w-0">
+        <a href="{{ url_for('main.game_setup', game_id=game.id) if game.status == 'setup' else url_for('main.control', game_id=game.id) }}" class="block">
+          <h2 class="font-display font-semibold text-lg leading-snug truncate">{{ game.name }}</h2>
+          <div class="text-sm text-muted space-y-1 mt-2">
+            <p>{{ s.team_count }} team{{ 's' if s.team_count != 1 }} · {{ s.round_count }} round{{ 's' if s.round_count != 1 }} · {{ s.question_count }} question{{ 's' if s.question_count != 1 }}</p>
+            <p>Created {{ s.created_at }}</p>
+          </div>
+        </a>
+      </div>
       <span class="badge shrink-0
         {{ 'bg-success/10 border-success/30 text-success' if game.status == 'active' else
            'bg-muted/10 border-border text-muted' if game.status == 'completed' else
@@ -28,11 +35,14 @@
         {{ game.status }}
       </span>
     </div>
-    <div class="text-sm text-muted space-y-1">
-      <p>{{ s.team_count }} team{{ 's' if s.team_count != 1 }} · {{ s.round_count }} round{{ 's' if s.round_count != 1 }} · {{ s.question_count }} question{{ 's' if s.question_count != 1 }}</p>
-      <p>Created {{ s.created_at }}</p>
+    <div class="mt-4 flex flex-wrap gap-2">
+      <a href="{{ url_for('main.game_setup', game_id=game.id) if game.status == 'setup' else url_for('main.control', game_id=game.id) }}" class="btn-secondary">Open</a>
+      <a href="{{ url_for('main.edit_game', game_id=game.id) }}" class="btn-secondary">Edit</a>
+      <form method="POST" action="{{ url_for('main.delete_game', game_id=game.id) }}" onsubmit="return confirm('Delete this game and everything in it? This can\'t be undone.');">
+        <button type="submit" class="btn-secondary text-danger">Delete</button>
+      </form>
     </div>
-  </a>
+  </div>
   {% endfor %}
 </div>
 {% else %}

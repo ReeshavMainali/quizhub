@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Edit team — {{ game.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-display font-semibold">Edit team</h1>
+      <p class="text-sm text-muted">Change the team name and color.</p>
+    </div>
+    <a href="{{ url_for('main.game_setup', game_id=game.id) }}" class="btn-secondary">Back</a>
+  </div>
+
+  <form method="POST" action="{{ url_for('main.edit_team', game_id=game.id, team_id=team.id) }}" class="space-y-4">
+    <div>
+      <label class="label" for="name">Team name</label>
+      <input class="input" type="text" id="name" name="name" value="{{ team.name }}" required>
+    </div>
+    <div>
+      <span class="label">Color</span>
+      <div class="flex flex-wrap gap-2">
+        {% for color in team_colors %}
+        <label class="cursor-pointer">
+          <input type="radio" name="color" value="{{ color }}" class="sr-only peer" {{ 'checked' if team.color == color }}>
+          <span class="block w-7 h-7 rounded-full ring-offset-2 ring-offset-surface peer-checked:ring-2 ring-text/40" style="background:{{ color }}"></span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="flex gap-2 justify-end pt-4">
+      <a href="{{ url_for('main.game_setup', game_id=game.id) }}" class="btn-secondary">Cancel</a>
+      <button type="submit" class="btn-primary">Save changes</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

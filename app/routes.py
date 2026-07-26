@@ -66,6 +66,30 @@ def delete_game(game_id):
     return redirect(url_for("main.dashboard"))
 
 
+@bp.route("/games/<int:game_id>/edit")
+def edit_game(game_id):
+    game = Game.query.get_or_404(game_id)
+    return render_template("edit_game.html", game=game)
+
+
+@bp.route("/games/<int:game_id>/edit", methods=["POST"])
+def update_game(game_id):
+    game = Game.query.get_or_404(game_id)
+    name = request.form.get("name", "").strip()
+    if not name:
+        flash("Game name can't be empty.", "error")
+        return redirect(url_for("main.edit_game", game_id=game.id))
+    try:
+        default_timer = int(request.form.get("default_timer", game.default_timer))
+    except ValueError:
+        default_timer = game.default_timer
+    game.name = name
+    game.default_timer = max(5, default_timer)
+    db.session.commit()
+    flash("Game updated.", "success")
+    return redirect(url_for("main.dashboard"))
+
+
 # ------------------------------------------------------------------ setup
 
 @bp.route("/games/<int:game_id>/setup")
@@ -95,6 +119,25 @@ def delete_team(game_id, team_id):
     team = Team.query.filter_by(id=team_id, game_id=game_id).first_or_404()
     db.session.delete(team)
     db.session.commit()
+    return redirect(url_for("main.game_setup", game_id=game_id))
+
+
+@bp.route("/games/<int:game_id>/teams/<int:team_id>/edit", methods=["GET", "POST"])
+def edit_team(game_id, team_id):
+    team = Team.query.filter_by(id=team_id, game_id=game_id).first_or_404()
+    if request.method == "GET":
+        return render_template("edit_team.html", game=team.game, team=team, team_colors=TEAM_COLORS)
+
+    name = request.form.get("name", "").strip()
+    color = request.form.get("color", TEAM_COLORS[0])
+    if not name:
+        flash("Team name can't be empty.", "error")
+        return redirect(url_for("main.edit_team", game_id=game_id, team_id=team_id))
+    team.name = name
+    if color in TEAM_COLORS:
+        team.color = color
+    db.session.commit()
+    flash("Team updated.", "success")
     return redirect(url_for("main.game_setup", game_id=game_id))
 
 
@@ -147,6 +190,32 @@ def move_round(game_id, round_id):
     return redirect(url_for("main.game_setup", game_id=game_id))
 
 
+@bp.route("/games/<int:game_id>/rounds/<int:round_id>/edit", methods=["GET", "POST"])
+def edit_round(game_id, round_id):
+    round_obj = Round.query.filter_by(id=round_id, game_id=game_id).first_or_404()
+    if request.method == "GET":
+        return render_template("edit_round.html", game=round_obj.game, round=round_obj, round_types=ROUND_TYPES)
+
+    name = request.form.get("name", "").strip()
+    rtype = request.form.get("type", "normal")
+    timer_raw = request.form.get("timer_seconds", "").strip()
+    turn_size = request.form.get("lightning_turn_size", "6").strip()
+
+    if not name:
+        flash("Round name can't be empty.", "error")
+        return redirect(url_for("main.edit_round", game_id=game_id, round_id=round_id))
+    if rtype not in ROUND_TYPES:
+        abort(400)
+
+    round_obj.name = name
+    round_obj.type = rtype
+    round_obj.timer_seconds = int(timer_raw) if timer_raw.isdigit() else None
+    round_obj.lightning_turn_size = int(turn_size) if turn_size.isdigit() else 6
+    db.session.commit()
+    flash("Round updated.", "success")
+    return redirect(url_for("main.game_setup", game_id=game_id))
+
+
 @bp.route("/games/<int:game_id>/rounds/<int:round_id>/questions", methods=["POST"])
 def add_question(game_id, round_id):
     round_obj = Round.query.filter_by(id=round_id, game_id=game_id).first_or_404()
@@ -188,6 +257,78 @@ def delete_question(game_id, question_id):
     ).first_or_404()
     db.session.delete(question)
     db.session.commit()
+    return redirect(url_for("main.game_setup", game_id=game_id))
+
+
+@bp.route("/games/<int:game_id>/questions/<int:question_id>/edit", methods=["GET", "POST"])
+def edit_question(game_id, question_id):
+    # GET: render form; POST: apply updates
+    question = Question.query.join(Round).filter(
+        Question.id == question_id, Round.game_id == game_id
+    ).first_or_404()
+    round_obj = question.round
+    game = round_obj.game
+
+    if request.method == "GET":
+        return render_template("edit_question.html", game=game, round=round_obj, question=question)
+
+    # POST - update fields
+    text = request.form.get("text", "").strip()
+    answer = request.form.get("answer", "").strip()
+    points = request.form.get("points", "").strip()
+    choices = [request.form.get(f"choice_{c}", "").strip() for c in ("a", "b", "c", "d")]
+    choices = [c for c in choices if c] or None
+
+    if not text or not answer:
+        flash("Question and answer are required.", "error")
+        return redirect(url_for("main.edit_question", game_id=game_id, question_id=question_id))
+
+    question.text = text
+    question.answer = answer
+    question.points = int(points) if points.isdigit() else question.points
+    question.choices = choices
+
+    # handle removals
+    if request.form.get("remove_image") == "1":
+        if question.image_filename:
+            try:
+                os.remove(os.path.join(current_app.config["UPLOAD_FOLDER"], question.image_filename))
+            except Exception:
+                pass
+        question.image_filename = None
+    if request.form.get("remove_audio") == "1":
+        if question.audio_filename:
+            try:
+                os.remove(os.path.join(current_app.config["UPLOAD_FOLDER"], question.audio_filename))
+            except Exception:
+                pass
+        question.audio_filename = None
+
+    # handle new uploads
+    try:
+        new_image = _save_upload(request.files.get("image"), IMAGE_EXTS)
+        if new_image:
+            # remove old
+            if question.image_filename:
+                try:
+                    os.remove(os.path.join(current_app.config["UPLOAD_FOLDER"], question.image_filename))
+                except Exception:
+                    pass
+            question.image_filename = new_image
+        new_audio = _save_upload(request.files.get("audio"), AUDIO_EXTS)
+        if new_audio:
+            if question.audio_filename:
+                try:
+                    os.remove(os.path.join(current_app.config["UPLOAD_FOLDER"], question.audio_filename))
+                except Exception:
+                    pass
+            question.audio_filename = new_audio
+    except ValueError as e:
+        flash(str(e), "error")
+        return redirect(url_for("main.edit_question", game_id=game_id, question_id=question_id))
+
+    db.session.commit()
+    flash("Question updated.", "success")
     return redirect(url_for("main.game_setup", game_id=game_id))
 
 

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Edit round — {{ game.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-display font-semibold">Edit round</h1>
+      <p class="text-sm text-muted">Update the round settings while setting up your game.</p>
+    </div>
+    <a href="{{ url_for('main.game_setup', game_id=game.id) }}" class="btn-secondary">Back</a>
+  </div>
+
+  <form method="POST" action="{{ url_for('main.edit_round', game_id=game.id, round_id=round.id) }}" class="grid sm:grid-cols-4 gap-3 items-end">
+    <div class="sm:col-span-2">
+      <label class="label" for="name">Round name</label>
+      <input class="input" type="text" id="name" name="name" value="{{ round.name }}" required>
+    </div>
+    <div>
+      <label class="label" for="type">Type</label>
+      <select class="input" id="type" name="type">
+        {% for t in round_types %}
+        <option value="{{ t }}" {{ 'selected' if round.type == t }}>{{ t|capitalize }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="label" for="timer_seconds">Timer override (sec)</label>
+      <input class="input" type="number" id="timer_seconds" name="timer_seconds" value="{{ round.timer_seconds or '' }}" min="5" max="300" placeholder="Game default">
+    </div>
+    <div class="sm:col-span-4">
+      <label class="label" for="lightning_turn_size">Lightning: questions per team turn</label>
+      <input class="input sm:w-40" type="number" id="lightning_turn_size" name="lightning_turn_size" min="1" max="20" value="{{ round.lightning_turn_size }}">
+    </div>
+    <div class="sm:col-span-4 flex gap-2 justify-end pt-4">
+      <a href="{{ url_for('main.game_setup', game_id=game.id) }}" class="btn-secondary">Cancel</a>
+      <button type="submit" class="btn-primary">Save changes</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
