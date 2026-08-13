@@ -69,7 +69,11 @@ def on_start_question(data):
         emit("action_error", {"message": "Question not found."})
         return
     state = game_logic.get_or_create_state(game)
-    game_logic.start_question(game, state, question)
+    try:
+        game_logic.start_question(game, state, question)
+    except game_logic.GameLogicError as e:
+        emit("action_error", {"message": str(e)})
+        return
     broadcast_state(game)
 
 
@@ -163,13 +167,23 @@ def on_next_question(data):
     if not round_obj:
         emit("action_error", {"message": "Select a round first."})
         return
-    nxt = game_logic.next_pending_question(round_obj)
-    if not nxt:
-        state.question_phase = "round_complete"
-        state.current_question_id = None
-        db.session.commit()
+    if round_obj.type == "lightning":
+        nxt = game_logic.next_pending_question(round_obj)
+        if not nxt:
+            state.question_phase = "round_complete"
+            state.current_question_id = None
+            db.session.commit()
+        else:
+            game_logic.start_question(game, state, nxt)
     else:
-        game_logic.start_question(game, state, nxt)
+        state.current_question_id = None
+        state.current_turn_team_id = None
+        state.question_phase = "idle"
+        state.timer_status = "stopped"
+        state.timer_duration = None
+        state.timer_started_at = None
+        state.timer_remaining_at_pause = None
+        db.session.commit()
     broadcast_state(game)
 
 

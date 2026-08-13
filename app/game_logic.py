@@ -53,6 +53,8 @@ def select_round(game, state, round_obj):
 
 
 def start_question(game, state, question):
+    if question.status == "resolved":
+        raise GameLogicError("That question has already been played.")
     round_obj = question.round
     _start_timer(state, round_obj.effective_timer())
     state.current_question_id = question.id
@@ -292,16 +294,28 @@ def serialize_state(game, state, include_answer):
             "points_earned": state.lightning_points_earned,
         }
 
+    if round_obj:
+        data["board"] = [
+            {
+                "id": q.id,
+                "number": idx + 1,
+                "status": q.status,
+                "is_current": question is not None and q.id == question.id,
+            }
+            for idx, q in enumerate(sorted(round_obj.questions, key=lambda x: x.order))
+        ]
+
     if include_answer and round_obj:
         data["round_questions"] = [
             {
                 "id": q.id,
+                "number": idx + 1,
                 "text": q.text[:80] + ("…" if len(q.text) > 80 else ""),
                 "points": q.points,
                 "status": q.status,
                 "is_current": question is not None and q.id == question.id,
             }
-            for q in sorted(round_obj.questions, key=lambda x: x.order)
+            for idx, q in enumerate(sorted(round_obj.questions, key=lambda x: x.order))
         ]
 
     return data

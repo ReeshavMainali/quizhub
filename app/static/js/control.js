@@ -209,19 +209,33 @@
       </div>`;
   }
 
+  function boardStageHtml() {
+    const cells = (state.board || [])
+      .map((q) => {
+        if (q.status === "resolved") {
+          return `<button type="button" disabled class="board-cell text-2xl bg-border/30 border-border/40 text-muted opacity-50 cursor-not-allowed">${q.number}</button>`;
+        }
+        const cls = q.is_current
+          ? "bg-primary text-surface border-primary"
+          : "bg-surface2 text-text border-border hover:border-primary";
+        return `<button type="button" data-board-qid="${q.id}" class="board-cell text-2xl cursor-pointer ${cls}">${q.number}</button>`;
+      })
+      .join("");
+    const allDone = (state.board || []).length > 0 && state.board.every((q) => q.status === "resolved");
+    return `
+      <div class="m-auto w-full text-center py-4">
+        <p class="text-xs uppercase tracking-wide text-muted mb-1">${esc(state.round.name)}</p>
+        <p class="font-display text-lg mb-4">${
+          allDone ? "Round complete — every question has been played" : "Have them pick a number"
+        }</p>
+        <div class="board-grid max-w-2xl mx-auto">${cells}</div>
+      </div>`;
+  }
+
   function normalStageHtml() {
     const phase = state.phase;
     if (phase === "idle" || phase === "round_complete") {
-      return `<div class="m-auto text-center text-muted py-10">
-        <p class="font-display text-lg mb-1">${
-          phase === "round_complete" ? "Round complete" : "Ready when you are"
-        }</p>
-        <p class="text-sm">${
-          phase === "round_complete"
-            ? "Every question here has been used — pick another round above."
-            : "Pick a question from the list below to start the timer."
-        }</p>
-      </div>`;
+      return boardStageHtml();
     }
 
     const q = state.question;
@@ -249,7 +263,7 @@
           <p class="text-xs uppercase tracking-wide text-success mb-1">Answer</p>
           <p class="font-medium">${esc(q.answer)}</p>
         </div>
-        <button data-action="next_question" class="btn-primary mt-auto">Next question →</button>
+        <button data-action="next_question" class="btn-primary mt-auto">Back to board →</button>
       `;
     }
 
@@ -360,6 +374,12 @@
         ring.set(state.timer.duration, state.timer.remaining, state.timer.status);
       }
     }
+
+    stageEl.querySelectorAll("[data-board-qid]").forEach((el) => {
+      el.addEventListener("click", () => {
+        socket.emit("start_question", { game_id: gameId, question_id: Number(el.dataset.boardQid) });
+      });
+    });
 
     stageEl.querySelectorAll("[data-action]").forEach((el) => {
       el.addEventListener("click", () => {

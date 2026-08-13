@@ -148,6 +148,27 @@
       </div>`;
   }
 
+  function boardStageHtml() {
+    const cells = (state.board || [])
+      .map((q) => {
+        const cls =
+          q.status === "resolved"
+            ? "board-cell text-3xl sm:text-4xl bg-border/30 border-border/40 text-muted opacity-40"
+            : q.is_current
+            ? "board-cell text-3xl sm:text-4xl bg-primary text-surface border-primary"
+            : "board-cell text-3xl sm:text-4xl bg-surface text-text border-border";
+        return `<div class="${cls}">${q.number}</div>`;
+      })
+      .join("");
+    const allDone = (state.board || []).length > 0 && state.board.every((q) => q.status === "resolved");
+    return `
+      <div class="w-full">
+        <p class="text-sm uppercase tracking-widest text-muted mb-3">${esc(state.round.name)}</p>
+        <p class="font-display text-2xl mb-5">${allDone ? "Round complete" : "Pick a number"}</p>
+        <div class="board-grid max-w-3xl mx-auto">${cells}</div>
+      </div>`;
+  }
+
   function renderStage() {
     if (!state.round) {
       stageEl.innerHTML = `<p class="font-display text-3xl text-muted">Get ready…</p>`;
@@ -157,11 +178,15 @@
     const phase = state.phase;
 
     if (phase === "idle" || phase === "round_complete") {
-      stageEl.innerHTML = `
-        <p class="text-sm uppercase tracking-widest text-muted mb-3">${
-          phase === "round_complete" ? "Round complete" : "Up next"
-        }</p>
-        <p class="font-display text-4xl sm:text-5xl">${esc(state.round.name)}</p>`;
+      if (state.round.type === "lightning") {
+        stageEl.innerHTML = `
+          <p class="text-sm uppercase tracking-widest text-muted mb-3">${
+            phase === "round_complete" ? "Round complete" : "Up next"
+          }</p>
+          <p class="font-display text-4xl sm:text-5xl">${esc(state.round.name)}</p>`;
+      } else {
+        stageEl.innerHTML = boardStageHtml();
+      }
       return;
     }
 
